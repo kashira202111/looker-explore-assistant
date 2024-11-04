@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react'
 import PromptInput from './PromptInput'
 import Sidebar from './Sidebar'
 import { v4 as uuidv4 } from 'uuid'
@@ -25,12 +25,9 @@ import MessageThread from './MessageThread'
 import clsx from 'clsx'
 import { Close } from '@material-ui/icons'
 import {
-  FormControl,
-  InputLabel,
+  Autocomplete,
   LinearProgress,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
+  TextField,
   Tooltip,
 } from '@mui/material'
 import { getRelativeTimeString } from '../../utils/time'
@@ -67,6 +64,7 @@ const AgentPage = () => {
     isSemanticModelLoaded,
   } = useSelector((state: RootState) => state.assistant as AssistantState)
 
+  const exploreKeys = Object.keys(examples.exploreSamples)
   const explores = Object.keys(examples.exploreSamples).map((key) => {
     const exploreParts = key.split(':')
     return {
@@ -210,16 +208,18 @@ const AgentPage = () => {
     setExpanded(!expanded)
   }
 
-  const handleExploreChange = (event: SelectChangeEvent) => {
-    const exploreKey = event.target.value
-    const [modelName, exploreId] = exploreKey.split(':')
-    dispatch(
-      setCurrenExplore({
-        modelName,
-        exploreId,
-        exploreKey,
-      }),
-    )
+  const handleExploreChange = (_event: SyntheticEvent, newValue: string | null) => {
+    const exploreKey = newValue
+    if (exploreKey) {
+      const [modelName, exploreId] = exploreKey.split(':')
+      dispatch(
+        setCurrenExplore({
+          modelName,
+          exploreId,
+          exploreKey,
+        }),
+      )
+    }
   }
 
   const isAgentReady = isBigQueryMetadataLoaded && isSemanticModelLoaded
@@ -391,23 +391,15 @@ const AgentPage = () => {
               <div className="flex flex-col max-w-3xl m-auto mt-16">
                 {explores.length > 1 && (
                   <div className="text-md border-b-2 p-2 max-w-3xl">
-                    <FormControl className="">
-                      <InputLabel>Explore</InputLabel>
-                      <Select
-                        value={currentExplore.exploreKey}
-                        label="Explore"
-                        onChange={handleExploreChange}
-                      >
-                        {explores.map((oneExplore) => (
-                          <MenuItem
-                            key={oneExplore.exploreKey}
-                            value={oneExplore.exploreKey}
-                          >
-                            {toCamelCase(oneExplore.exploreId)}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <Autocomplete
+                      defaultValue={exploreKeys[0]}
+                      options={exploreKeys.sort((a, b) => -b.localeCompare(a))}
+                      sx={{ width: 400 }}
+                      onChange={handleExploreChange}
+                      renderInput={(params) => (
+                        <TextField {...params} label="Explore" />
+                      )}
+                    />
                   </div>
                 )}
                 <SamplePrompts />
